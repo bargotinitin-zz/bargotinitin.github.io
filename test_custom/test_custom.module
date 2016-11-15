@@ -1,0 +1,161 @@
+<?php
+
+/**
+ * @file
+ * Form and submit operation file.
+ * @todo -  Need to include inc file for additonal code such as paging, etc.
+ * @todo -  Need to install Drupal coding standard plugin for writing beautiful code.
+ * @Author - Nitin Kumar
+ */
+
+/**
+ * Implements hook_views_api().
+ */
+function test_custom_views_api() {
+  return array(
+      'api' => '3',
+      'path' => drupal_get_path('module','test_custom'). '/views',
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function test_custom_menu() {
+  $items['test/custom'] = array(
+    'title' => 'Custom form',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('test_custom_make_form'),
+    'access arguments' => array('access content for this module'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+  $items['view/test/custom'] = array(
+    'title' => 'Custom Table',
+    'page callback' => 'view_test_custom_data',
+    'access arguments' => array('access content for this module'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function test_custom_permission() {
+  return array(
+    'access content for this module' => array(
+      'title' => t('Manage access content for this module'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_theme().
+ */
+function test_custom_theme() {
+  return array(
+    'test_custom_make_form' => array(
+      'render element' => 'form',
+      'template' => 'templates/test-custom-form',
+    ),
+  );
+}
+
+/**
+ * Callback - test_custom_make_form.
+ * @todo - Email needs to be validated.
+ * @todo - Phone field needs to be validated.
+ */
+function test_custom_make_form() {
+  $form['entity_name'] = array(
+  	'#type' => 'textfield',
+    '#title' => t('Entity Name'),
+    '#required' => TRUE,
+  );
+  $form['email'] = array(
+  	'#type' => 'textfield',
+    '#title' => t('Email'),
+    '#required' => TRUE,
+  );
+  $form['phone'] = array(
+  	'#type' => 'textfield',
+    '#title' => t('Phone'),
+    '#required' => TRUE,
+  );
+  $form['address'] = array(
+  	'#type' => 'textarea',
+    '#title' => t('Address'),
+    '#required' => TRUE,
+  );
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save'),
+  );
+
+  return $form;
+}
+
+/**
+ * Callback - test_custom_make_form.
+ * @return - Success Message
+ */
+function test_custom_make_form_submit($form, &$form_state) {
+  $fields = array(
+  	'entity_name' => $form_state['values']['entity_name'],
+  	'email' => $form_state['values']['email'],
+  	'phone' => $form_state['values']['phone'],
+  	'address' => $form_state['values']['address'],
+  );
+  db_insert('test_custom_info')->fields($fields)->execute();
+  drupal_set_message(t('Form details submitted successfully'));
+}
+
+/**
+ * Pager and sorting for this table.
+ */
+function view_test_custom_data() {
+  // Set Title.
+  drupal_set_title(t('Test custom table view'));
+
+  $output = '';
+  $header = array(
+    array('data' => t('Id'), 'field' => 'id'),
+    array('data' => t('Entity name'), 'field' => 'entity_name'),
+    array('data' => t('Email'), 'field' => 'email'),
+    array('data' => t('Phone'), 'field' => 'phone'),
+    array('data' => t('Address'), 'field' => 'address'),
+  );
+
+  // Error logging starts here.
+  error_log(print_r($header, TRUE));
+
+  $query = db_select("test_custom_info", "c");
+  $query->fields('c', array('id', 'entity_name', 'email', 'phone', 'address'));
+  $query = $query->extend('TableSort')->extend('PagerDefault')->limit(50);
+  $query->orderByHeader($header);
+  $result = $query->execute();
+
+  $rows = array();
+  while ($data = $result->fetchObject()) {
+    $rows[] = array(
+      $data->id,
+      $data->entity_name,
+      $data->email,
+      $data->phone,
+      $data->address,
+    );
+  };
+
+  $output .= theme('table',
+    array(
+      'header' => $header,
+      'rows' => $rows,
+      'attributes' => array(),
+      'sticky' => TRUE,
+      'caption' => '',
+      'colgroups' => array(),
+      'empty' => t("No Records Found."),
+    )
+  ) . theme('pager');
+  return $output;
+}

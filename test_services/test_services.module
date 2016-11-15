@@ -1,0 +1,13 @@
+<?php
+
+/**
+ * Implements hook_services_resources().
+ */
+function test_services_services_resources() {
+  module_load_include('inc', 'test_services', 'resources/test');
+  $resources = array(
+    '#api_version' => '3002'
+  );
+  $resources += _test_services_resource_definition();
+  return $resources;
+}

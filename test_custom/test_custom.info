@@ -1,0 +1,6 @@
+name = Test custom
+description = Views custom table integration.
+package = Custom
+core = 7.x
+dependencies[] = views
+files[] = views/test_custom.views.inc”
